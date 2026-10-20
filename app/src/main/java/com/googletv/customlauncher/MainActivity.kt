@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
         webView.webViewClient = WebViewClient()
 
         // Remplacez par l'URL hébergée sur GitHub Pages de votre index.html
-        webView.loadUrl("https://sebnutt.github.io/LauncherGoogleTV/index.html")
+        webView.loadUrl("file:///android_asset/index.html")
     }
 
     override fun onBackPressed() {
