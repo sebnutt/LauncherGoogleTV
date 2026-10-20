@@ -18,25 +18,28 @@ jobs:
         java-version: '17'
         distribution: 'temurin'
 
-    - name: Install Android SDK and Build APK
+    - name: Setup Android SDK and Gradle
       run: |
-        # Téléchargement et installation manuelle des outils en ligne de commande Android
+        # Installation manuelle des outils SDK Android
         mkdir -p $HOME/android-sdk/cmdline-tools
         wget -q https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip -O cmdline-tools.zip
         unzip -q cmdline-tools.zip -d $HOME/android-sdk/cmdline-tools
         mv $HOME/android-sdk/cmdline-tools/cmdline-tools $HOME/android-sdk/cmdline-tools/latest
         
-        # Configuration des variables d'environnement
         export ANDROID_HOME=$HOME/android-sdk
         export PATH=$PATH:$ANDROID_HOME/cmdline-tools/latest/bin:$ANDROID_HOME/platform-tools
         
-        # Acceptation des licences et installation des composants SDK requis
         yes | sdkmanager --licenses > /dev/null
         sdkmanager "platform-tools" "platforms;android-34" "build-tools;34.0.0"
         
-        # Configuration de local.properties et lancement du build Gradle
         echo "sdk.dir=$ANDROID_HOME" > local.properties
-        sudo apt-get update && sudo apt-get install -y gradle
+
+        # Téléchargement et installation d'une version récente de Gradle (8.5) compatible
+        wget -q https://services.gradle.org/distributions/gradle-8.5-bin.zip -O gradle.zip
+        unzip -q gradle.zip
+        export PATH=$PWD/gradle-8.5/bin:$PATH
+
+        # Lancement de la compilation
         gradle assembleDebug
 
     - name: Upload APK
