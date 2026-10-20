@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google TV Custom Launcher Prototype</title>
+    <!-- Tailwind CSS pour les styles épurés et responsive -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome pour les icônes TV & Réglages -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Police Google Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0d14;
+            color: #ffffff;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        /* Effet de fondu doux pour l'image de héros */
+        .hero-bg {
+            transition: background-image 0.6s ease-in-out;
+            background-size: cover;
+            background-position: center 20%;
+        }
+
+        /* Contour lumineux et zoom pour le focus TV (10-foot UI) */
+        .focusable {
+            transition: transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), box-shadow 0.25s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.25s ease;
+            outline: none;
+            border: 2px solid transparent;
+        }
+
+        .focusable.focused, .focusable:focus {
+            transform: scale(1.08);
+            border-color: #ffffff;
+            box-shadow: 0px 10px 30px rgba(255, 255, 255, 0.35);
+            z-index: 30;
+        }
+
+        /* Masquer la barre de défilement tout en gardant le scroll manuel */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Animations modales */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .modal-animate {
+            animation: fadeIn 0.2s ease-out forwards;
+        }
+    </style>
+</head>
+<body class="relative flex flex-col justify-between h-screen w-screen overflow-hidden">
+
+    <!-- ========================================================= -->
+    <!-- PARTE SUPERIEURE (50vh) : HERO BANNER DYNAMIQUE           -->
+    <!-- ========================================================= -->
+    <div id="hero-section" class="hero-bg relative h-[50vh] w-full flex flex-col justify-between p-8 md:p-12">
+        <!-- Overlay Dégradé pour lisibilité et transition fluide avec la partie basse -->
+        <div class="absolute inset-0 bg-gradient-to-t from-[#0b0d14] via-[#0b0d14]/40 to-black/60 pointer-events-none"></div>
+
+        <!-- En-tête : Logo TV / Date & Profil Utilisateur (Haut Droite) -->
+        <div class="relative z-20 flex justify-between items-center w-full">
+            <div class="flex items-center gap-3">
+                <i class="fa-solid fa-tv text-2xl text-blue-400"></i>
+                <span class="font-bold text-xl tracking-wider uppercase text-gray-200">Google TV <span class="text-blue-500 text-xs px-2 py-0.5 rounded bg-blue-500/20 border border-blue-500/30">Streamer</span></span>
+            </div>
+
+            <!-- Profil Utilisateur & Accès Réglages -->
+            <div id="btn-profile" tabindex="0" class="focusable flex items-center gap-3 bg-black/50 backdrop-blur-md p-1.5 pr-4 rounded-full cursor-pointer border border-white/10 hover:border-white/30">
+                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80" 
+                     alt="Photo Profil" 
+                     class="w-9 h-9 rounded-full object-cover border border-white/20"
+                     onerror="this.src='https://placehold.co/100x100/333/fff?text=User'">
+                <div class="flex flex-col text-left">
+                    <span class="text-xs font-semibold text-gray-200">Alexandre M.</span>
+                    <span class="text-[10px] text-gray-400">Google Account</span>
+                </div>
+                <i class="fa-solid fa-gear text-gray-300 ml-2 text-sm"></i>
+            </div>
+        </div>
+
+        <!-- Métadonnées du Contenu Phare Sélectionné -->
+        <div class="relative z-20 max-w-2xl mb-4 transition-all duration-300">
+            <div class="flex items-center gap-3 mb-2">
+                <span id="hero-badge" class="px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded bg-red-600 text-white">Netflix Original</span>
+                <span id="hero-rating" class="text-xs font-medium text-amber-400 flex items-center gap-1"><i class="fa-solid fa-star text-[10px]"></i> 8.7</span>
+                <span id="hero-year" class="text-xs text-gray-300">2024</span>
+            </div>
+            <h1 id="hero-title" class="text-3xl md:text-5xl font-extrabold tracking-tight mb-2 drop-shadow-md">Stranger Things</h1>
+            <p id="hero-desc" class="text-xs md:text-sm text-gray-300 line-clamp-2 leading-relaxed drop-shadow">
+                Quand un jeune garçon disparaît, une petite ville découvre un mystère impliquant des expériences secrètes, des forces surnaturelles terrifiantes et une fillette étrange.
+            </p>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- PARTE INFERIEURE (50vh) : APPS & CONTINUER LA LECTURE     -->
+    <!-- ========================================================= -->
+    <div class="relative h-[50vh] w-full bg-[#0b0d14] flex flex-col justify-evenly px-8 md:px-12 py-2 z-20">
+
+        <!-- LIGNE 1 : APPLICATIONS SVOD PRINCIPALES -->
+        <div class="flex flex-col gap-2">
+            <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                <i class="fa-solid fa-shapes text-blue-400"></i> Applications SVOD
+            </h2>
+            <div id="row-apps" class="flex items-center gap-4 overflow-x-auto no-scrollbar py-2">
+                
+                <!-- Netflix -->
+                <div tabindex="0" data-app="netflix" class="focusable app-card flex-shrink-0 w-36 h-20 bg-neutral-900 rounded-xl p-3 flex flex-col justify-center items-center cursor-pointer border border-white/5 relative group overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-red-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <span class="text-red-600 font-black text-xl tracking-widest z-10">NETFLIX</span>
+                </div>
+
+                <!-- Canal+ -->
+                <div tabindex="0" data-app="canal" class="focusable app-card flex-shrink-0 w-36 h-20 bg-neutral-900 rounded-xl p-3 flex flex-col justify-center items-center cursor-pointer border border-white/5 relative group overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <span class="text-white font-black text-lg tracking-tighter bg-black px-2 py-0.5 rounded border border-white/20 z-10">CANAL+</span>
+                </div>
+
+                <!-- YouTube -->
+                <div tabindex="0" data-app="youtube" class="focusable app-card flex-shrink-0 w-36 h-20 bg-neutral-900 rounded-xl p-3 flex flex-col justify-center items-center cursor-pointer border border-white/5 relative group overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-red-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <div class="flex items-center gap-2 z-10">
+                        <i class="fa-brands fa-youtube text-red-600 text-3xl"></i>
+                        <span class="font-bold text-sm tracking-tight">YouTube</span>
+                    </div>
+                </div>
+
+                <!-- Prime Video -->
+                <div tabindex="0" data-app="prime" class="focusable app-card flex-shrink-0 w-36 h-20 bg-neutral-900 rounded-xl p-3 flex flex-col justify-center items-center cursor-pointer border border-white/5 relative group overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-sky-500/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <span class="text-sky-400 font-extrabold text-base tracking-wide z-10">prime video</span>
+                </div>
+
+                <!-- Disney+ -->
+                <div tabindex="0" data-app="disney" class="focusable app-card flex-shrink-0 w-36 h-20 bg-neutral-900 rounded-xl p-3 flex flex-col justify-center items-center cursor-pointer border border-white/5 relative group overflow-hidden">
+                    <div class="absolute inset-0 bg-gradient-to-br from-blue-600/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                    <span class="text-white font-extrabold text-lg tracking-wider z-10 italic">Disney<span class="text-blue-400 font-normal">+</span></span>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- LIGNE 2 : REPRENDRE LA LECTURE (10 Contenus multi-plateformes) -->
+        <div class="flex flex-col gap-2">
+            <div class="flex justify-between items-center pr-4">
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-gray-400 flex items-center gap-2">
+                    <i class="fa-solid fa-play-circle text-blue-400"></i> Reprendre la lecture
+                </h2>
+                <span class="text-[10px] text-gray-500">10 contenus récents</span>
+            </div>
+            
+            <div id="row-continue" class="flex items-center gap-4 overflow-x-auto no-scrollbar py-2 px-1">
+                <!-- Les 10 vignettes seront générées par le script JS ci-dessous -->
+            </div>
+        </div>
+
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- MODALE SIMULATEUR DE REGLAGES ANDROID GOOGLE TV           -->
+    <!-- ========================================================= -->
+    <div id="settings-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-6">
+        <div class="bg-[#161922] border border-white/10 rounded-2xl w-full max-w-md p-6 modal-animate shadow-2xl flex flex-col gap-6">
+            <div class="flex justify-between items-center border-b border-white/10 pb-4">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-sliders text-blue-400 text-xl"></i>
+                    <h3 class="text-lg font-bold">Réglages Google TV</h3>
+                </div>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-white p-2">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <button tabindex="0" class="focusable modal-item flex items-center justify-between p-3.5 rounded-xl bg-white/5 hover:bg-white/10 text-left">
+                    <span class="flex items-center gap-3 text-sm font-medium"><i class="fa-solid fa-wifi text-blue-400 w-5"></i> Réseau & Internet</span>
+                    <span class="text-xs text-gray-400">Wi-Fi Connecté</span>
+                </button>
+                <button tabindex="0" class="focusable modal-item flex items-center justify-between p-3.5 rounded-xl bg-white/5 hover:bg-white/10 text-left">
+                    <span class="flex items-center gap-3 text-sm font-medium"><i class="fa-solid fa-user-gear text-emerald-400 w-5"></i> Comptes et connexion</span>
+                    <span class="text-xs text-gray-400">Alexandre M.</span>
+                </button>
+                <button tabindex="0" class="focusable modal-item flex items-center justify-between p-3.5 rounded-xl bg-white/5 hover:bg-white/10 text-left">
+                    <span class="flex items-center gap-3 text-sm font-medium"><i class="fa-solid fa-border-all text-purple-400 w-5"></i> Applications</span>
+                    <span class="text-xs text-gray-400">Autorisations, accès</span>
+                </button>
+                <button tabindex="0" class="focusable modal-item flex items-center justify-between p-3.5 rounded-xl bg-white/5 hover:bg-white/10 text-left">
+                    <span class="flex items-center gap-3 text-sm font-medium"><i class="fa-solid fa-microchip text-amber-400 w-5"></i> Système & Préférences</span>
+                    <span class="text-xs text-gray-400">Android TV 12</span>
+                </button>
+            </div>
+
+            <p class="text-[11px] text-gray-500 text-center">
+                Appuyez sur <kbd class="px-1.5 py-0.5 bg-gray-800 rounded text-gray-300">Retour / Echap</kbd> pour quitter
+            </p>
+        </div>
+    </div>
+
+    <!-- ========================================================= -->
+    <!-- LOGIQUE ET INTERACTIONS DU LAUNCHER                       -->
+    <!-- ========================================================= -->
+    <script>
+        // Data des plateformes SVOD et de leurs contenus phares
+        const svodData = {
+            netflix: {
+                title: "Stranger Things",
+                badge: "Netflix Original",
+                badgeColor: "bg-red-600",
+                rating: "8.7",
+                year: "2024",
+                desc: "Quand un jeune garçon disparaît, une petite ville découvre un mystère impliquant des expériences secrètes, des forces surnaturelles terrifiantes et une fillette étrange.",
+                bgUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=1600&q=80" // Alternative stylisée / atmosphérique
+            },
+            canal: {
+                title: "D'Argent et de Sang",
+                badge: "Création Originale Canal+",
+                badgeColor: "bg-black border border-white/30",
+                rating: "8.4",
+                year: "2023",
+                desc: "L'escroquerie du siècle, survenir en 2008-2009. Des milliards partis en fumée sur le nouveau marché financier des « quotas de carbone ».",
+                bgUrl: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1600&q=80"
+            },
+            youtube: {
+                title: "Inoxtag - Kaizen : 1 An pour Gravir l'Everest",
+                badge: "YouTube Exclusive",
+                badgeColor: "bg-red-500",
+                rating: "9.6",
+                year: "2024",
+                desc: "Le défi ultime d'un jeune créateur de contenu pour atteindre le sommet du monde après un an de préparation physique et mentale intense.",
+                bgUrl: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?auto=format&fit=crop&w=1600&q=80"
+            },
+            prime: {
+                title: "The Boys",
+                badge: "Prime Original",
+                badgeColor: "bg-sky-600",
+                rating: "8.7",
+                year: "2024",
+                desc: "Dans un monde où les super-héros gèrent leur notoriété autant que leurs pouvoirs, une équipe d'affranchis cherche à faire tomber les super-héros corrompus.",
+                bgUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?auto=format&fit=crop&w=1600&q=80"
+            },
+            disney: {
+                title: "The Mandalorian",
+                badge: "Disney+ Original",
+                badgeColor: "bg-blue-600",
+                rating: "8.7",
+                year: "2023",
+                desc: "Les voyages d'un chasseur de primes solitaire dans les contrées les plus reculées de la Galaxie, loin de l'autorité de la Nouvelle République.",
+                bgUrl: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?auto=format&fit=crop&w=1600&q=80"
+            }
+        };
+
+        // Données des 10 contenus "Reprendre la lecture" (multi-plateformes)
+        const continueWatchingData = [
+            { title: "Severance", ep: "S1 : E7", app: "Apple TV+", progress: 75, img: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=500&q=80" },
+            { title: "Dune : Deuxième Partie", ep: "2h 15m", app: "Canal+", progress: 40, img: "https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=500&q=80" },
+            { title: "House of the Dragon", ep: "S2 : E4", app: "Max", progress: 85, img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80" },
+            { title: "Le Problème à 3 Corps", ep: "S1 : E2", app: "Netflix", progress: 20, img: "https://images.unsplash.com/photo-1451187580459-43490279c0fa?w=500&q=80" },
+            { title: "The Bear", ep: "S3 : E1", app: "Disney+", progress: 60, img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=500&q=80" },
+            { title: "Fallout", ep: "S1 : E5", app: "Prime Video", progress: 90, img: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=500&q=80" },
+            { title: "Le Bureau des Légendes", ep: "S4 : E8", app: "Canal+", progress: 15, img: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=500&q=80" },
+            { title: "Cyberpunk: Edgerunners", ep: "S1 : E9", app: "Netflix", progress: 95, img: "https://images.unsplash.com/photo-1542751371-adc38448a05e?w=500&q=80" },
+            { title: "Les Anneaux de Pouvoir", ep: "S2 : E3", app: "Prime Video", progress: 50, img: "https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?w=500&q=80" },
+            { title: "Loki", ep: "S2 : E6", app: "Disney+", progress: 30, img: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=500&q=80" }
+        ];
+
+        // 1. Génération dynamique de la ligne "Reprendre la lecture"
+        function renderContinueWatching() {
+            const container = document.getElementById('row-continue');
+            container.innerHTML = continueWatchingData.map((item, index) => `
+                <div tabindex="0" class="focusable continue-card flex-shrink-0 w-52 h-28 bg-neutral-900 rounded-xl relative overflow-hidden cursor-pointer group border border-white/10">
+                    <img src="${item.img}" alt="${item.title}" class="w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity">
+                    <div class="absolute inset-0 bg-gradient-to-t from-black via-black/30 to-transparent p-2.5 flex flex-col justify-end">
+                        <span class="text-[9px] font-bold text-blue-400 uppercase tracking-wider">${item.app}</span>
+                        <h3 class="text-xs font-bold text-white truncate">${item.title}</h3>
+                        <p class="text-[10px] text-gray-300 mb-1.5">${item.ep}</p>
+                    </div>
+                    <!-- Barre de progression -->
+                    <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-gray-800/80">
+                        <div class="h-full bg-blue-500 rounded-r" style="width: ${item.progress}%"></div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // 2. Changement de l'arrière-plan Héros au focus/survol
+        function updateHero(appKey) {
+            const data = svodData[appKey];
+            if (!data) return;
+
+            const heroSection = document.getElementById('hero-section');
+            const heroTitle = document.getElementById('hero-title');
+            const heroBadge = document.getElementById('hero-badge');
+            const heroRating = document.getElementById('hero-rating');
+            const heroYear = document.getElementById('hero-year');
+            const heroDesc = document.getElementById('hero-desc');
+
+            // Image de fond
+            heroSection.style.backgroundImage = `url('${data.bgUrl}')`;
+
+            // Textes
+            heroTitle.textContent = data.title;
+            heroBadge.textContent = data.badge;
+            heroBadge.className = `px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded text-white ${data.badgeColor}`;
+            heroRating.innerHTML = `<i class="fa-solid fa-star text-[10px]"></i> ${data.rating}`;
+            heroYear.textContent = data.year;
+            heroDesc.textContent = data.desc;
+        }
+
+        // 3. Gestionnaire de la Navigation Télécommande TV (Keyboard Controller)
+        let focusables = [];
+        let currentFocusIndex = 0;
+
+        function refreshFocusables() {
+            focusables = Array.from(document.querySelectorAll('.focusable:not(.hidden)'));
+        }
+
+        function setFocus(index) {
+            if (focusables.length === 0) return;
+            if (index < 0) index = 0;
+            if (index >= focusables.length) index = focusables.length - 1;
+
+            focusables.forEach(el => el.classList.remove('focused'));
+            currentFocusIndex = index;
+
+            const target = focusables[currentFocusIndex];
+            target.classList.add('focused');
+            target.focus();
+
+            // Auto-scroll pour garantir la visibilité de la ligne TV
+            target.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+
+            // Si c'est une app SVOD, on met à jour le héros
+            const appKey = target.getAttribute('data-app');
+            if (appKey) {
+                updateHero(appKey);
+            }
+        }
+
+        // Événements Clavier (Télécommande TV D-Pad)
+        document.addEventListener('keydown', (e) => {
+            refreshFocusables();
+            const currentEl = focusables[currentFocusIndex];
+            
+            if (!currentEl) return;
+
+            switch (e.key) {
+                case 'ArrowRight':
+                    e.preventDefault();
+                    setFocus(currentFocusIndex + 1);
+                    break;
+                case 'ArrowLeft':
+                    e.preventDefault();
+                    setFocus(currentFocusIndex - 1);
+                    break;
+                case 'ArrowDown':
+                    e.preventDefault();
+                    navigateVertical('down');
+                    break;
+                case 'ArrowUp':
+                    e.preventDefault();
+                    navigateVertical('up');
+                    break;
+                case 'Enter':
+                    e.preventDefault();
+                    currentEl.click();
+                    break;
+                case 'Escape':
+                case 'BackSpace':
+                    e.preventDefault();
+                    closeModal();
+                    break;
+            }
+        });
+
+        // Navigation 2D simplifiée (Haut / Bas) entre les sections
+        function navigateVertical(direction) {
+            const currentEl = focusables[currentFocusIndex];
+            const profileBtn = document.getElementById('btn-profile');
+            const appsRow = Array.from(document.querySelectorAll('#row-apps .focusable'));
+            const continueRow = Array.from(document.querySelectorAll('#row-continue .focusable'));
+            const modalItems = Array.from(document.querySelectorAll('.modal-item'));
+
+            const modal = document.getElementById('settings-modal');
+            if (!modal.classList.contains('hidden')) {
+                // Navigation dans la modale
+                let idx = modalItems.indexOf(currentEl);
+                if (direction === 'down' && idx < modalItems.length - 1) setFocus(focusables.indexOf(modalItems[idx + 1]));
+                if (direction === 'up' && idx > 0) setFocus(focusables.indexOf(modalItems[idx - 1]));
+                return;
+            }
+
+            if (currentEl === profileBtn) {
+                if (direction === 'down') setFocus(focusables.indexOf(appsRow[0]));
+            } else if (appsRow.includes(currentEl)) {
+                if (direction === 'up') setFocus(focusables.indexOf(profileBtn));
+                if (direction === 'down') setFocus(focusables.indexOf(continueRow[0]));
+            } else if (continueRow.includes(currentEl)) {
+                if (direction === 'up') setFocus(focusables.indexOf(appsRow[0]));
+            }
+        }
+
+        // Modale des Réglages
+        function openModal() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.remove('hidden');
+            refreshFocusables();
+            const firstModalItem = modal.querySelector('.modal-item');
+            if (firstModalItem) setFocus(focusables.indexOf(firstModalItem));
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('settings-modal');
+            modal.classList.add('hidden');
+            refreshFocusables();
+            setFocus(0);
+        }
+
+        // Initialisation de l'App
+        window.onload = function () {
+            renderContinueWatching();
+            
+            // Attacher les écouteurs de survol/clic pour la souris
+            document.querySelectorAll('#row-apps .app-card').forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    const appKey = card.getAttribute('data-app');
+                    updateHero(appKey);
+                });
+                card.addEventListener('click', () => {
+                    const appKey = card.getAttribute('data-app');
+                    alert(`Lancement de l'application : ${appKey.toUpperCase()}`);
+                });
+            });
+
+            document.getElementById('btn-profile').addEventListener('click', openModal);
+            document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+
+            // Initialiser sur Netflix par défaut
+            updateHero('netflix');
+            
+            // Focus initial sur la première application
+            setTimeout(() => {
+                refreshFocusables();
+                const firstApp = document.querySelector('#row-apps .app-card');
+                if (firstApp) setFocus(focusables.indexOf(firstApp));
+            }, 100);
+        };
+    </script>
+</body>
+</html>
